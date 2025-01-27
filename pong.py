@@ -1,12 +1,14 @@
-import pygame
 import random
+import pygame, sys
+import pygame_widgets
+from pygame_widgets.button import Button
 
 pygame.init()
 
 # Screen setup
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Pong")
 
 # Colors
@@ -50,6 +52,25 @@ class Ball:
         self.speed_x *= -1
 
 def main():
+    while True:
+        SCREEN.fill(BLACK)
+        button = Button(
+            SCREEN, 100, 100, 300, 500, text="Play",
+            fontSize=45, margin=20,
+            inactiveColour=(255,0,0),
+            pressedColour=(0,255,0), radius=20,
+            onClick=lambda: play()
+        )
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+        pygame_widgets.update(events)
+        pygame.display.flip()
+
+
+def play():
     clock = pygame.time.Clock()
     # Create paddles
     left_paddle = Paddle(50, SCREEN_HEIGHT//2 - PADDLE_HEIGHT//2)
@@ -91,18 +112,19 @@ def main():
             left_score += 1
             ball = Ball()
         # Drawing
-        screen.fill(BLACK)
-        left_paddle.draw(screen)
-        right_paddle.draw(screen)
-        ball.draw(screen)
+        SCREEN.fill(BLACK)
+        left_paddle.draw(SCREEN)
+        right_paddle.draw(SCREEN)
+        ball.draw(SCREEN)
         # Draw scores
         left_text = font.render(str(left_score), True, WHITE)
         right_text = font.render(str(right_score), True, WHITE)
-        screen.blit(left_text, (SCREEN_WIDTH//4, 20))
-        screen.blit(right_text, (3*SCREEN_WIDTH//4, 20))
+        SCREEN.blit(left_text, (SCREEN_WIDTH//4, 20))
+        SCREEN.blit(right_text, (3*SCREEN_WIDTH//4, 20))
         pygame.display.flip()
         clock.tick(60)
     pygame.quit()
+    sys.exit()
 
 if __name__ == "__main__":
     main()
