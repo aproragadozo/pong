@@ -69,6 +69,24 @@ def main():
         pygame_widgets.update(events)
         pygame.display.flip()
 
+def end(winner):
+    while True:
+        SCREEN.fill(BLACK)
+        button = Button(
+            SCREEN, 100, 100, 600, 500, text=f"Congrats, {winner}, you win!",
+            fontSize=45, margin=20,
+            inactiveColour=(255,0,0),
+            pressedColour=(0,255,0), radius=20,
+            onClick=lambda: play()
+        )
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+        pygame_widgets.update(events)
+        pygame.display.flip()
+
 
 def play():
     clock = pygame.time.Clock()
@@ -107,9 +125,13 @@ def play():
         # Scoring
         if ball.rect.left <= 0:
             right_score += 1
+            if right_score == 10:
+                end("Right player")
             ball = Ball()
         if ball.rect.right >= SCREEN_WIDTH:
             left_score += 1
+            if left_score == 10:
+                end("Left player")
             ball = Ball()
         # Drawing
         SCREEN.fill(BLACK)
