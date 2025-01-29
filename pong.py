@@ -3,6 +3,7 @@ import pygame, sys
 import pygame_widgets
 from pygame_widgets.button import Button
 
+pygame.mixer.pre_init(44100,-16,2,512)
 pygame.init()
 
 # Screen setup
@@ -14,6 +15,9 @@ pygame.display.set_caption("Pong")
 # Colors
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+bg_color = pygame.Color('#2F373F')
+accent_color = (27,35,43)
+middle_strip = pygame.Rect(SCREEN_WIDTH/2 - 2,0,4,SCREEN_HEIGHT)
 
 # Paddle properties
 PADDLE_WIDTH = 15
@@ -25,6 +29,13 @@ BALL_SIZE = 15
 BALL_SPEED_X = 5
 BALL_SPEED_Y = 5
 
+class Block(pygame.sprite.Sprite):
+    pass
+class Player(Block):
+    pass
+
+class Object(Block):
+    pass
 class Paddle:
     def __init__(self, x, y):
         self.rect = pygame.Rect(x, y, PADDLE_WIDTH, PADDLE_HEIGHT)
@@ -134,7 +145,7 @@ def play():
                 end("Left player")
             ball = Ball()
         # Drawing
-        SCREEN.fill(BLACK)
+        SCREEN.fill(bg_color)
         left_paddle.draw(SCREEN)
         right_paddle.draw(SCREEN)
         ball.draw(SCREEN)
