@@ -1,5 +1,6 @@
 import random
-import pygame, sys
+import sys
+import pygame
 import pygame_widgets
 from pygame_widgets.button import Button
 
@@ -7,10 +8,10 @@ pygame.mixer.pre_init(44100,-16,2,512)
 pygame.init()
 
 # Screen setup
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-SCREEN = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+SCREEN = pygame.display.set_mode((900,600), pygame.RESIZABLE)
 pygame.display.set_caption("Pong")
+SCREEN_WIDTH, SCREEN_HEIGHT = SCREEN.get_size()
+
 
 # Colors
 WHITE = (255, 255, 255)
@@ -101,6 +102,7 @@ def end(winner):
 
 def play():
     clock = pygame.time.Clock()
+    SCREEN_WIDTH, SCREEN_HEIGHT = SCREEN.get_size()
     # Create paddles
     left_paddle = Paddle(50, SCREEN_HEIGHT//2 - PADDLE_HEIGHT//2)
     right_paddle = Paddle(SCREEN_WIDTH - 50 - PADDLE_WIDTH, SCREEN_HEIGHT//2 - PADDLE_HEIGHT//2)
