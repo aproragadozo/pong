@@ -3,6 +3,7 @@ import sys
 import pygame
 import pygame_widgets
 from pygame_widgets.button import Button
+from pygame_widgets.dropdown import Dropdown
 
 pygame.mixer.pre_init(44100,-16,2,512)
 pygame.init()
@@ -97,11 +98,21 @@ def main():
     while True:
         screen.fill(BLACK)
         screen_width, screen_height = screen.get_size()
+        dropdown = Dropdown(
+            screen, screen_width//2, screen_height//2, 100, 100,
+            fontSize=45, margin=20,
+            inactiveColour=(255,0,0), pressedColour=(0,255,0),
+            radius=20,
+            name='Points to win',
+            choices=['10', '15', '20'],
+            values=[10, 15, 20]
+        )
+        points_to_win = dropdown.getSelected() if dropdown.getSelected() is not None else 10
         button = Button(
             screen, screen_width//2 - 150, screen_height//2 - 250, 300, 500,
             text="Play", fontSize=45, margin=20,
             inactiveColour=(255,0,0), pressedColour=(0,255,0),
-            radius=20, onClick=lambda: play(screen)
+            radius=20, onClick=lambda: play(screen, points_to_win)
         )
         events = pygame.event.get()
         for event in events:
@@ -115,14 +126,14 @@ def main():
 
 def end(winner, screen):
     while True:
-        screen_width, screen_height = SCREEN.get_size()
-        SCREEN.fill(BLACK)
+        screen_width, screen_height = screen.get_size()
+        screen.fill(BLACK)
         button = Button(
             screen, screen_width//2 - 300, screen_height//2 - 250, 600, 500,
             text=f"Congrats, {winner}, you win!",
             fontSize=45, margin=20,
             inactiveColour=(255,0,0), pressedColour=(0,255,0),
-            radius=20, onClick=lambda: play(screen)
+            radius=20, onClick=lambda: main()
         )
         events = pygame.event.get()
         for event in events:
@@ -134,7 +145,7 @@ def end(winner, screen):
         pygame_widgets.update(events)
         pygame.display.flip()
 
-def play(screen):
+def play(screen, points_to_win):
     clock = pygame.time.Clock()
     screen_width, screen_height = screen.get_size()
     
@@ -190,13 +201,13 @@ def play(screen):
         # Scoring
         if ball.rect.left <= 0:
             right_score += 1
-            if right_score == 10:
-                end("Right player")
+            if right_score == points_to_win:
+                end("Right player", screen)
             ball = Ball(screen_width, screen_height)
         if ball.rect.right >= screen_width:
             left_score += 1
-            if left_score == 10:
-                end("Left player")
+            if left_score == points_to_win:
+                end("Left player", screen)
             ball = Ball(screen_width, screen_height)
             
         # Drawing
