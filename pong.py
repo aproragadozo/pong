@@ -2,8 +2,9 @@ import random
 import sys
 import pygame
 import pygame_widgets
+import pygame_menu
 from pygame_widgets.button import Button
-from pygame_widgets.dropdown import Dropdown
+
 
 pygame.mixer.pre_init(44100,-16,2,512)
 pygame.init()
@@ -13,7 +14,11 @@ screen_info = pygame.display.Info()
 INITIAL_WIDTH = screen_info.current_w
 INITIAL_HEIGHT = screen_info.current_h - 40 #room for title bar!
 # SCREEN_WIDTH, SCREEN_HEIGHT = SCREEN.get_size()
+target_score = 10
 
+# font as surface to render
+def get_font(size):
+    return pygame.font.Font("assets/font.ttf", size)
 
 # Colors
 WHITE = (255, 255, 255)
@@ -92,27 +97,65 @@ class Ball:
     def bounce_x(self):
         self.speed_x *= -1
 
+def set_target_score(value):
+    target_score = value
+
 def main():
     screen = pygame.display.set_mode((INITIAL_WIDTH, INITIAL_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Pong")
     while True:
         screen.fill(BLACK)
         screen_width, screen_height = screen.get_size()
-        dropdown = Dropdown(
-            screen, screen_width//2, screen_height//2, 100, 100,
-            fontSize=45, margin=20,
+        MENU_TEXT = get_font(100).render("MAIN MENU", True, "#b68f40")
+        MENU_RECT = MENU_TEXT.get_rect(center=(640, 100))
+
+        PLAY_BUTTON = Button(
+            screen, screen_width//2 - 150, screen_height//2 - 250, 300, 100,
+            text="Play", fontSize=45, margin=20,
             inactiveColour=(255,0,0), pressedColour=(0,255,0),
-            radius=20,
-            name='Points to win',
-            choices=['10', '15', '20'],
-            values=[10, 15, 20]
+            radius=20, onClick=lambda: play(screen, target_score)
         )
-        points_to_win = dropdown.getSelected() if dropdown.getSelected() is not None else 10
+        OPTIONS_BUTTON = Button(
+            screen, screen_width//2 - 50, screen_height//2 - 250, 300, 100,
+            text="Options", fontSize=45, margin=20,
+            inactiveColour=(255,0,0), pressedColour=(0,255,0),
+            radius=20, onClick=lambda: options(screen, target_score)
+        )
+        """
         button = Button(
             screen, screen_width//2 - 150, screen_height//2 - 250, 300, 500,
             text="Play", fontSize=45, margin=20,
             inactiveColour=(255,0,0), pressedColour=(0,255,0),
             radius=20, onClick=lambda: play(screen, points_to_win)
+        )
+        """
+        events = pygame.event.get()
+        for event in events:
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.VIDEORESIZE:
+                screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+        pygame_widgets.update(events)
+        pygame.display.flip()
+
+def options(screen, target_score):
+    while True:
+        screen_width, screen_height = screen.get_size()
+        screen.fill(BLACK)
+        ten = Button(
+            screen, screen_width//2 - 300, screen_height//2 - 250, 300, 100,
+            text='10',
+            fontSize=45, margin=20,
+            inactiveColour=(255,0,0), pressedColour=(0,255,0),
+            radius=20, onClick=lambda: play(screen, 10)
+        )
+        fifteen = Button(
+            screen, screen_width//2 - 400, screen_height//2 - 250, 300, 100,
+            text='15',
+            fontSize=45, margin=20,
+            inactiveColour=(255,0,0), pressedColour=(0,255,0),
+            radius=20, onClick=lambda: play(screen, 15)
         )
         events = pygame.event.get()
         for event in events:
@@ -145,7 +188,7 @@ def end(winner, screen):
         pygame_widgets.update(events)
         pygame.display.flip()
 
-def play(screen, points_to_win):
+def play(screen, target_score):
     clock = pygame.time.Clock()
     screen_width, screen_height = screen.get_size()
     
@@ -201,12 +244,12 @@ def play(screen, points_to_win):
         # Scoring
         if ball.rect.left <= 0:
             right_score += 1
-            if right_score == points_to_win:
+            if right_score == target_score:
                 end("Right player", screen)
             ball = Ball(screen_width, screen_height)
         if ball.rect.right >= screen_width:
             left_score += 1
-            if left_score == points_to_win:
+            if left_score == target_score:
                 end("Left player", screen)
             ball = Ball(screen_width, screen_height)
             
