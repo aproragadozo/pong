@@ -5,9 +5,23 @@ import pygame_widgets
 import pygame_menu
 from pygame_widgets.button import Button
 
+# sprite parent
+class Block(pygame.sprite.Sprite):
+    def __init__(self, path, x_pos, y_pos):
+        super().__init__()
+        self.image = pygame.image.load(path)
+        self.rect = self.image.get_rect(center = (x_pos, y_pos))
+
+
 
 pygame.mixer.pre_init(44100,-16,2,512)
 pygame.init()
+
+# sound
+ping = pygame.mixer.Sound("assets/pong.ogg")
+score_sound = pygame.mixer.Sound("assets/score.ogg")
+
+clock = pygame.time.Clock()
 
 # Screen setup (is moved into main(), and passed on to the two subscreens)
 screen_info = pygame.display.Info()
@@ -189,7 +203,6 @@ def end(winner, screen):
         pygame.display.flip()
 
 def play(screen, target_score):
-    clock = pygame.time.Clock()
     screen_width, screen_height = screen.get_size()
     
     # Create paddles with percentage-based positioning
@@ -235,19 +248,23 @@ def play(screen, target_score):
         
         # Ball collision with walls
         if ball.rect.top <= 0 or ball.rect.bottom >= screen_height:
+            pygame.mixer.Sound.play(ping)
             ball.bounce_y()
             
         # Ball collision with paddles
         if ball.rect.colliderect(left_paddle.rect) or ball.rect.colliderect(right_paddle.rect):
+            pygame.mixer.Sound.play(ping)
             ball.bounce_x()
             
         # Scoring
         if ball.rect.left <= 0:
+            pygame.mixer.Sound.play(score_sound)
             right_score += 1
             if right_score == target_score:
                 end("Right player", screen)
             ball = Ball(screen_width, screen_height)
         if ball.rect.right >= screen_width:
+            pygame.mixer.Sound.play(score_sound)
             left_score += 1
             if left_score == target_score:
                 end("Left player", screen)
