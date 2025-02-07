@@ -12,7 +12,119 @@ class Block(pygame.sprite.Sprite):
         self.image = pygame.image.load(path)
         self.rect = self.image.get_rect(center = (x_pos, y_pos))
 
+class Player(Block):
+    def __init__(self, path, x_pos, y_pos, speed, screen_height):
+        super().__init__(path,x_pos,y_pos)
+        self.speed = speed
+        self.movement = 0
+        self.screen_height = screen_height
 
+    def screen_constrain(self):
+        if self.rect.top <= 0:
+            self.rect.top = 0
+        if self.rect.bottom >= self.screen_height:
+            self.rect.bottom = self.screen_height
+
+    def update(self, ball_group):
+        self.rect.y += self.movement
+        self.screen_constrain()
+        self.movement = 0
+
+class Ball(Block):
+    def __init__(self, path, x_pos, y_pos, speed_x, speed_y, paddles, screen_height, screen_width):
+        super().__init__(path,x_pos,y_pos)
+        self.speed_x = speed_x * random.choice((-1,1))
+        self.speed_y = speed_y * random.choice((-1,1))
+        self.paddles = paddles
+        self.score_time = 0
+        self.screen_height = screen_height
+        self.screen_width = screen_width
+
+    def update(self):
+        self.rect.x += self.speed_x
+        self.rect.y += self.speed_y
+        self.collisions()
+        
+    def collisions(self):
+        if self.rect.top <= 0 or self.rect.bottom >= self.screen_height:
+            pygame.mixer.Sound.play(ping)
+            self.speed_y *= -1
+
+        if pygame.sprite.spritecollide(self,self.paddles,False):
+            pygame.mixer.Sound.play(ping)
+            collision_paddle = pygame.sprite.spritecollide(self,self.paddles,False)[0].rect
+            if abs(self.rect.right - collision_paddle.left) < 10 and self.speed_x > 0:
+                self.speed_x *= -1
+            if abs(self.rect.left - collision_paddle.right) < 10 and self.speed_x < 0:
+                self.speed_x *= -1
+            if abs(self.rect.top - collision_paddle.bottom) < 10 and self.speed_y < 0:
+                self.rect.top = collision_paddle.bottom
+                self.speed_y *= -1
+            if abs(self.rect.bottom - collision_paddle.top) < 10 and self.speed_y > 0:
+                self.rect.bottom = collision_paddle.top
+                self.speed_y *= -1
+
+    def reset_ball(self):
+        self.speed_x *= random.choice((-1,1))
+        self.speed_y *= random.choice((-1,1))
+        self.rect.center = (self.screen_width/2, self.screen_height/2)
+        pygame.mixer.Sound.play(score_sound)
+
+class Opponent(Block):
+    def __init__(self, path, x_pos, y_pos, speed, screen_height):
+        super().__init__(path,x_pos,y_pos)
+        self.speed = speed
+        self.screen_height = screen_height
+
+    def update(self, ball_group):
+        if random.random() < 0.85:  # 85% chance to move (adds some randomness)
+            if self.rect.top < ball_group.sprite.rect.y:
+                self.rect.y += self.speed
+            if self.rect.bottom > ball_group.sprite.rect.y:
+                self.rect.y -= self.speed
+        self.constrain()
+
+    def constrain(self):
+        if self.rect.top <= 0: self.rect.top = 0
+        if self.rect.bottom >= self.screen_height: self.rect.bottom = self.screen_height
+
+class GameManager:
+    def __init__(self, ball_group, paddle_group, screen):
+        self.player_score = 0
+        self.opponent_score = 0
+        self.ball_group = ball_group
+        self.paddle_group = paddle_group
+        self.screen = screen
+        self.screen_width, self.screen_height = screen.get_size()
+
+    def run_game(self, screen):
+        # Drawing the game objects
+        self.paddle_group.draw(self.screen)
+        self.ball_group.draw(self.screen)
+
+        # Updating the game objects
+        self.paddle_group.update(self.ball_group)
+        self.ball_group.update()
+        self.reset_ball()
+        self.draw_score()
+
+    def reset_ball(self):
+        if self.ball_group.sprite.rect.right >= self.screen_width:
+            self.opponent_score += 1
+            self.ball_group.sprite.reset_ball()
+        if self.ball_group.sprite.rect.left <= 0:
+            self.player_score += 1
+            self.ball_group.sprite.reset_ball()
+
+    def draw_score(self):
+        player_score = get_font(40).render(str(self.player_score),True,accent_color)
+        opponent_score = get_font(40).render(str(self.opponent_score),True,accent_color)
+
+        player_score_rect = player_score.get_rect(midleft = (self.screen_width / 2 + 40,self.screen_height/2))
+        opponent_score_rect = opponent_score.get_rect(midright = (self.screen_width / 2 - 40,self.screen_height/2))
+
+        self.screen.blit(player_score,player_score_rect)
+        self.screen.blit(opponent_score,opponent_score_rect)
 
 pygame.mixer.pre_init(44100,-16,2,512)
 pygame.init()
@@ -53,63 +165,6 @@ BALL_SIZE_PERCENT = 0.025  # scales with screen width
 BALL_SPEED_X_PERCENT = 0.006
 BALL_SPEED_Y_PERCENT = 0.006
 
-class Paddle:
-    def __init__(self, x_percent, screen_width, screen_height):
-        self.x_percent = x_percent
-        self.update_dimensions(screen_width, screen_height)
-        
-    def update_dimensions(self, screen_width, screen_height):
-        paddle_width = int(screen_width * PADDLE_WIDTH_PERCENT)
-        paddle_height = int(screen_height * PADDLE_HEIGHT_PERCENT)
-        x = int(screen_width * self.x_percent)
-        y = screen_height//2 - paddle_height//2
-        self.rect = pygame.Rect(x, y, paddle_width, paddle_height)
-        self.speed = int(screen_height * PADDLE_SPEED_PERCENT)
-        
-    def move(self, up=True, screen_height=INITIAL_HEIGHT):
-        if up and self.rect.top > 0:
-            self.rect.y -= self.speed
-        elif not up and self.rect.bottom < screen_height:
-            self.rect.y += self.speed
-            
-    def draw(self, screen):
-        pygame.draw.rect(screen, WHITE, self.rect)
-
-class Ball:
-    def __init__(self, screen_width, screen_height):
-        self.screen_width = screen_width
-        self.screen_height = screen_height
-        self.reset()
-        
-    def reset(self):
-        ball_size = int(self.screen_width * BALL_SIZE_PERCENT)
-        self.rect = pygame.Rect(
-            self.screen_width//2 - ball_size//2,
-            self.screen_height//2 - ball_size//2,
-            ball_size, ball_size
-        )
-        self.speed_x = int(self.screen_width * BALL_SPEED_X_PERCENT) * random.choice([-1, 1])
-        self.speed_y = int(self.screen_height * BALL_SPEED_Y_PERCENT) * random.choice([-1, 1])
-        
-    def update_dimensions(self, screen_width, screen_height):
-        self.screen_width = screen_width
-        self.screen_height = screen_height
-        ball_size = int(screen_width * BALL_SIZE_PERCENT)
-        self.rect.width = ball_size
-        self.rect.height = ball_size
-        
-    def move(self):
-        self.rect.x += self.speed_x
-        self.rect.y += self.speed_y
-        
-    def draw(self, screen):
-        pygame.draw.rect(screen, WHITE, self.rect)
-        
-    def bounce_y(self):
-        self.speed_y *= -1
-        
-    def bounce_x(self):
-        self.speed_x *= -1
 
 def set_target_score(value):
     target_score = value
@@ -118,7 +173,7 @@ def main():
     screen = pygame.display.set_mode((INITIAL_WIDTH, INITIAL_HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption("Pong")
     while True:
-        screen.fill(BLACK)
+        screen.fill(bg_color)
         screen_width, screen_height = screen.get_size()
         MENU_TEXT = get_font(100).render("MAIN MENU", True, "#b68f40")
         MENU_RECT = MENU_TEXT.get_rect(center=(640, 100))
@@ -130,7 +185,7 @@ def main():
             radius=20, onClick=lambda: play(screen, target_score)
         )
         OPTIONS_BUTTON = Button(
-            screen, screen_width//2 - 50, screen_height//2 - 250, 300, 100,
+            screen, screen_width//2 - 150, screen_height//2 - 100, 300, 100,  # Shift down
             text="Options", fontSize=45, margin=20,
             inactiveColour=(255,0,0), pressedColour=(0,255,0),
             radius=20, onClick=lambda: options(screen, target_score)
@@ -205,21 +260,23 @@ def end(winner, screen):
 def play(screen, target_score):
     screen_width, screen_height = screen.get_size()
     
-    # Create paddles with percentage-based positioning
-    left_paddle = Paddle(PADDLE_OFFSET_PERCENT, screen_width, screen_height)
-    right_paddle = Paddle(1 - PADDLE_OFFSET_PERCENT - PADDLE_WIDTH_PERCENT, screen_width, screen_height)
-    
-    # Create ball
-    ball = Ball(screen_width, screen_height)
-    
-    # Scores
-    left_score = 0
-    right_score = 0
-    font = pygame.font.Font(None, 36)
+    # Game objects
+    player = Player('assets/Paddle.png', screen_width - 20, screen_height/2, 5, screen_height)
+    opponent = Opponent('assets/Paddle.png', 20, screen_height/2, 5, screen_height)
+    paddle_group = pygame.sprite.Group()
+    paddle_group.add(player)
+    paddle_group.add(opponent)
+
+    ball = Ball('assets/Ball.png', screen_width/2, screen_height/2, 4, 4, paddle_group, screen_height, screen_width)
+    ball_sprite = pygame.sprite.GroupSingle()
+    ball_sprite.add(ball)
+
+    game_manager = GameManager(ball_sprite,paddle_group, screen)
     
     running = True
     while running:
-        current_width, current_height = screen.get_size()
+        #current_width, current_height = screen.get_size()
+        screen_width, screen_height = screen.get_size()
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -233,67 +290,24 @@ def play(screen, target_score):
                 ball.update_dimensions(screen_width, screen_height)
                 
         # Paddle control
+        player.movement = 0
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_w]:
-            left_paddle.move(up=True, screen_height=screen_height)
-        if keys[pygame.K_s]:
-            left_paddle.move(up=False, screen_height=screen_height)
+        #if keys[pygame.K_w]:
+            #left_paddle.move(up=True, screen_height=screen_height)
+        #if keys[pygame.K_s]:
+            #left_paddle.move(up=False, screen_height=screen_height)
         if keys[pygame.K_UP]:
-            right_paddle.move(up=True, screen_height=screen_height)
+            #right_paddle.move(up=True, screen_height=screen_height)
+            player.movement = player.speed
         if keys[pygame.K_DOWN]:
-            right_paddle.move(up=False, screen_height=screen_height)
-            
-        # Ball movement
-        ball.move()
+            #right_paddle.move(up=False, screen_height=screen_height)
+            player.movement = player.speed
         
-        # Ball collision with walls
-        if ball.rect.top <= 0 or ball.rect.bottom >= screen_height:
-            pygame.mixer.Sound.play(ping)
-            ball.bounce_y()
-            
-        # Ball collision with paddles
-        if ball.rect.colliderect(left_paddle.rect) or ball.rect.colliderect(right_paddle.rect):
-            pygame.mixer.Sound.play(ping)
-            ball.bounce_x()
-            
-        # Scoring
-        if ball.rect.left <= 0:
-            pygame.mixer.Sound.play(score_sound)
-            right_score += 1
-            if right_score == target_score:
-                end("Right player", screen)
-            ball = Ball(screen_width, screen_height)
-        if ball.rect.right >= screen_width:
-            pygame.mixer.Sound.play(score_sound)
-            left_score += 1
-            if left_score == target_score:
-                end("Left player", screen)
-            ball = Ball(screen_width, screen_height)
-            
-        # Drawing
-        screen.fill(bg_color)
-        pygame.draw.rect(screen, accent_color, pygame.Rect(screen_width/2 - 2, 0, 4, screen_height))
-        left_paddle.draw(screen)
-        right_paddle.draw(screen)
-        ball.draw(screen)
-        
-        # Draw scores
-        left_text = font.render(str(left_score), True, WHITE)
-        right_text = font.render(str(right_score), True, WHITE)
-        
-        # Get the size of the rendered text
-        left_text_rect = left_text.get_rect()
-        right_text_rect = right_text.get_rect()
-        
-        # Position text close to center stripe
-        left_text_rect.center = (screen_width//2 - 30, screen_height//2)
-        right_text_rect.center = (screen_width//2 + 30, screen_height//2)
-        
-        screen.blit(left_text, left_text_rect)
-        screen.blit(right_text, right_text_rect)
-        
+        #pygame.display.flip()
+        #pygame.draw.rect(screen, accent_color, middle_strip)
+        game_manager.run_game(screen)
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(120)
         
     pygame.quit()
     sys.exit()
