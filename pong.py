@@ -97,7 +97,7 @@ class GameManager:
         self.screen = screen
         self.screen_width, self.screen_height = screen.get_size()
 
-    def run_game(self, screen):
+    def run_game(self, screen, target_score):
         # Drawing the game objects
         self.paddle_group.draw(self.screen)
         self.ball_group.draw(self.screen)
@@ -107,6 +107,12 @@ class GameManager:
         self.ball_group.update()
         self.reset_ball()
         self.draw_score()
+
+        # Check for win condition
+        if self.player_score >= target_score:
+            end("Player", screen)
+        elif self.opponent_score >= target_score:
+            end("Opponent", screen)
 
     def reset_ball(self):
         if self.ball_group.sprite.rect.right >= self.screen_width:
@@ -190,14 +196,7 @@ def main():
             inactiveColour=(255,0,0), pressedColour=(0,255,0),
             radius=20, onClick=lambda: options(screen, target_score)
         )
-        """
-        button = Button(
-            screen, screen_width//2 - 150, screen_height//2 - 250, 300, 500,
-            text="Play", fontSize=45, margin=20,
-            inactiveColour=(255,0,0), pressedColour=(0,255,0),
-            radius=20, onClick=lambda: play(screen, points_to_win)
-        )
-        """
+
         events = pygame.event.get()
         for event in events:
             if event.type == pygame.QUIT:
@@ -277,6 +276,8 @@ def play(screen, target_score):
     while running:
         #current_width, current_height = screen.get_size()
         screen_width, screen_height = screen.get_size()
+
+        screen.fill(bg_color)
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -298,14 +299,14 @@ def play(screen, target_score):
             #left_paddle.move(up=False, screen_height=screen_height)
         if keys[pygame.K_UP]:
             #right_paddle.move(up=True, screen_height=screen_height)
-            player.movement = player.speed
+            player.movement = -player.speed
         if keys[pygame.K_DOWN]:
             #right_paddle.move(up=False, screen_height=screen_height)
             player.movement = player.speed
         
         #pygame.display.flip()
         #pygame.draw.rect(screen, accent_color, middle_strip)
-        game_manager.run_game(screen)
+        game_manager.run_game(screen, target_score)
         pygame.display.flip()
         clock.tick(120)
         
