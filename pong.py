@@ -191,8 +191,8 @@ def main():
             radius=20, onClick=lambda: play(screen, target_score)
         )
         OPTIONS_BUTTON = Button(
-            screen, screen_width//2 - 150, screen_height//2 - 100, 300, 100,  # Shift down
-            text="Options", fontSize=45, margin=20,
+            screen, screen_width//2 - 150, screen_height//2 - 100, 400, 100,  # Shift down
+            text="Select target score", fontSize=45, margin=20,
             inactiveColour=(255,0,0), pressedColour=(0,255,0),
             radius=20, onClick=lambda: options(screen, target_score)
         )
@@ -212,14 +212,14 @@ def options(screen, target_score):
         screen_width, screen_height = screen.get_size()
         screen.fill(BLACK)
         ten = Button(
-            screen, screen_width//2 - 300, screen_height//2 - 250, 300, 100,
+            screen, screen_width//2 + 100, screen_height//2, 300, 100,
             text='10',
             fontSize=45, margin=20,
             inactiveColour=(255,0,0), pressedColour=(0,255,0),
             radius=20, onClick=lambda: play(screen, 10)
         )
         fifteen = Button(
-            screen, screen_width//2 - 400, screen_height//2 - 250, 300, 100,
+            screen, screen_width//2 + 100, screen_height//2 + 120, 300, 100,
             text='15',
             fontSize=45, margin=20,
             inactiveColour=(255,0,0), pressedColour=(0,255,0),
@@ -240,7 +240,7 @@ def end(winner, screen):
         screen_width, screen_height = screen.get_size()
         screen.fill(BLACK)
         button = Button(
-            screen, screen_width//2 - 300, screen_height//2 - 250, 600, 500,
+            screen, screen_width//2 - 300, screen_height//2 - 250, 600, 150,
             text=f"Congrats, {winner}, you win!",
             fontSize=45, margin=20,
             inactiveColour=(255,0,0), pressedColour=(0,255,0),
